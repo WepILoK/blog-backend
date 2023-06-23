@@ -1,7 +1,7 @@
 import express from "express";
 import jwt from "jsonwebtoken";
 
-export const checkAuth = async (req: any, res: express.Response, next: express.NextFunction) => {
+export default async (req: any, res: express.Response, next: express.NextFunction) => {
     const token = (req.headers.authorization || "").replace(/Bearer\s?/, "")
 
     if (!token) {

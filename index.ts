@@ -1,146 +1,80 @@
 import express from "express"
-import jwt from "jsonwebtoken"
-import bcrypt from "bcrypt"
 import mongoose from "mongoose"
-import {registerValidator} from "./validations/validations.js";
-import {validationResult} from "express-validator";
-import UserModel from "./models/User.js";
-import {checkAuth} from "./utils/checkAuth.js";
+import multer from "multer";
+
+import {loginValidator, postValidator, registerValidator} from "./src/validations/validations.js";
+import {checkAuth, handleValidationErrors} from "./src/utils/index.js";
+import {UserController, PostController} from "./src/controllers/index.js"
+
 
 mongoose.connect("mongodb+srv://WepJIoK:123456789w@cluster0.nkfzlbg.mongodb.net/blogDB?retryWrites=true&w=majority")
     .then(() => console.log('blogDB connected'))
     .catch((err) => console.log('blogDB error', err))
 
+
+const storage = multer.diskStorage({
+    destination: (req, file, callback) => {
+        callback(null, "src/uploads")
+    },
+    filename: (req, file, callback) => {
+        callback(null, file.originalname)
+    }
+})
+const upload = multer({storage})
+
+
 const app = express()
-
 app.use(express.json())
+app.use("/uploads", express.static("src/uploads"))
 
-app.post('/auth/login', async (req: express.Request, res: express.Response) => {
+app.post("/auth/register", registerValidator, handleValidationErrors, UserController.register)
+
+app.post("/auth/login", loginValidator, handleValidationErrors, UserController.login)
+
+app.get("/auth/me", checkAuth, UserController.getMe)
+
+
+app.post("/posts", postValidator, handleValidationErrors, checkAuth, PostController.create)
+
+app.get("/posts", PostController.getAll)
+
+app.get("/posts/:id", PostController.getById)
+
+app.patch("/posts/:id", postValidator, handleValidationErrors, checkAuth, PostController.update)
+
+app.delete("/posts/:id", checkAuth, PostController.remove)
+
+app.post("/upload", checkAuth, upload.single("image"), (req, res) => {
     try {
-        const user: any = await UserModel.findOne({email: req.body.email})
-        if (!user) {
-            res.status(400)
-                .json({
-                    status: "error",
-                    message: "authorization.login.failed",
-                })
-            return
-        }
-
-        const isValidPass = await bcrypt.compare(req.body.password, user._doc.passwordHash)
-
-        if (!isValidPass) {
-            res.status(400)
-                .json({
-                    status: "error",
-                    message: "authorization.login.failed",
-                })
-            return
-        }
-
-        const token = jwt.sign(
-            {
-                _id: user._id,
-                role: req.body.role,
-            },
-            "secretCode",
-            {
-                expiresIn: "30d"
-            }
-        )
-
-        const {passwordHash, __v, createdAt, updatedAt, ...userData} = user._doc
-
-        res.status(200).json({
-            status: "success",
-            message: "authorization.login.success",
-            bata: userData,
-            token
-        })
-    } catch (err) {
-        console.log(err)
-        res.status(500).json({
-            status: "error",
-            message: "authorization.login.failed",
-        })
-    }
-})
-
-app.post("/auth/register", registerValidator, async (req: express.Request, res: express.Response) => {
-    try {
-        const errors = validationResult(req)
-        if (!errors.isEmpty()) {
-            return res.status(400).json({
-                status: "error",
-                message: errors.array()[0].msg
-            })
-        }
-
-        const password = req.body.password
-        const salt = await bcrypt.genSalt(10)
-        const hash = await bcrypt.hash(password, salt)
-
-        const doc = new UserModel({
-            email: req.body.email,
-            fullName: req.body.fullName,
-            passwordHash: hash,
-            avatarUrl: req.body.avatarUrl,
-        })
-
-        const user: any = await doc.save()
-
-        const token = jwt.sign(
-            {
-                _id: user._id,
-                role: req.body.role,
-            },
-            "secretCode",
-            {
-                expiresIn: "30d"
-            }
-        )
-
-        const {passwordHash, __v, createdAt, updatedAt, ...userData} = user._doc
-
-        res.status(200).json({
-            status: "success",
-            message: "authorization.register.success",
-            bata: userData,
-            token
-        })
-
-    } catch (err) {
-        console.log(err)
-        res.status(500).json({
-            status: "error",
-            message: "authorization.register.failed",
-        })
-    }
-})
-
-app.get("/auth/me", checkAuth, async (req: any, res: express.Response) => {
-    try {
-        const user: any = await UserModel.findById(req.userId)
-
-        if (!user) {
+        if (!req.file) {
             res.status(404).json({
                 status: "error",
-                message: "authorization.me.notfound",
+                message: "upload.error",
             })
             return
         }
-        const {passwordHash, __v, createdAt, updatedAt, ...userData} = user._doc
+
+        //@ts-ignore
+        if (!["image/jpeg", "image/png", "image/svg+xml"].includes(req.file.mimetype)) {
+            res.status(404).json({
+                status: "error",
+                message: "upload.incorrect_file_extension",
+            })
+            return
+        }
 
         res.status(200).json({
             status: "success",
-            message: "authorization.me.success",
-            bata: userData,
+            message: "upload.success",
+            data: {
+                url: `/uploads/${req.file?.originalname}`
+            }
         })
+
     } catch (err) {
-        console.log(err)
         res.status(500).json({
             status: "error",
-            message: "authorization.me.failed",
+            message: "upload.error",
         })
     }
 })
