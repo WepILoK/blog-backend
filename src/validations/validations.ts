@@ -55,8 +55,8 @@ export const postValidator = [
         .withMessage('min: 10, max: 400'),
     body('imageUrl', "post.imageUrl.invalid")
         .optional()
-        .isURL(),
+        .isString(),
     body('tags', "post.tags.isArray")
         .optional()
-        .isArray(),
+        .isString(),
 ]

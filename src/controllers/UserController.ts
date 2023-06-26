@@ -36,7 +36,7 @@ export const UserController = {
             res.status(200).json({
                 status: "success",
                 message: "authorization.register.success",
-                bata: userData,
+                data: userData,
                 token
             })
 
@@ -87,7 +87,7 @@ export const UserController = {
             res.status(200).json({
                 status: "success",
                 message: "authorization.login.success",
-                bata: userData,
+                data: userData,
                 token
             })
         } catch (err) {
@@ -109,12 +109,25 @@ export const UserController = {
                 })
                 return
             }
+
+            const token = jwt.sign(
+                {
+                    _id: user._id,
+                    role: req.body.role,
+                },
+                "secretCode",
+                {
+                    expiresIn: "30d"
+                }
+            )
+
             const {passwordHash, __v, createdAt, updatedAt, ...userData} = user._doc
 
             res.status(200).json({
                 status: "success",
                 message: "authorization.me.success",
-                bata: userData,
+                data: userData,
+                token
             })
         } catch (err) {
             console.log(err)
