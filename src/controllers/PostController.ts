@@ -9,7 +9,7 @@ export const PostController = {
                 title: req.body.title,
                 text: req.body.text,
                 imageUrl: req.body.imageUrl,
-                tags: req.body.tags.split(',').filter(Boolean).map(item => item.trim()),
+                tags: req.body.tags.split(',').filter(Boolean).map((item: string) => item.trim()),
                 user: req.userId,
             })
 
@@ -32,7 +32,7 @@ export const PostController = {
     getAll: async (req: express.Request, res: express.Response) => {
         try {
 
-            const posts: any = await PostModel.find().sort({createdAt:-1})
+            const posts: any = await PostModel.find().sort({createdAt: -1})
                 .populate('user', ["email", "fullName", "avatarUrl"])
                 .exec()
 
@@ -99,7 +99,7 @@ export const PostController = {
                     title: req.body.title,
                     text: req.body.text,
                     imageUrl: req.body.imageUrl,
-                    tags: req.body.tags.split(',').filter(Boolean).map(item => item.trim()),
+                    tags: req.body.tags.split(',').filter(Boolean).map((item: string) => item.trim()),
                 }
             ).populate('user', ["email", "fullName", "avatarUrl"])
                 .exec()
@@ -159,7 +159,7 @@ export const PostController = {
     getLastTags: async (req: express.Request, res: express.Response) => {
         try {
 
-            const posts: any = await PostModel.find().sort({createdAt:-1})
+            const posts: any = await PostModel.find().sort({createdAt: -1})
                 .limit(4)
                 .exec()
 
@@ -171,7 +171,7 @@ export const PostController = {
             res.status(200).json({
                 status: "success",
                 message: "post.getLastTags.success",
-                data: tags,
+                data: tags.slice(0, 5),
             })
 
         } catch (err) {
