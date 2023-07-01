@@ -61,14 +61,14 @@ app.post("/upload", checkAuth, upload.single("image"), (req, res) => {
             return
         }
 
-        //@ts-ignore
-        if (!["image/jpeg", "image/png", "image/svg+xml"].includes(req.file.mimetype)) {
-            res.status(404).json({
-                status: "error",
-                message: "upload.incorrect_file_extension",
-            })
-            return
-        }
+        // //@ts-ignore
+        // if (!["image/jpeg", "image/png", "image/svg+xml"].includes(req.file.mimetype)) {
+        //     res.status(404).json({
+        //         status: "error",
+        //         message: "upload.incorrect_file_extension",
+        //     })
+        //     return
+        // }
 
         res.status(200).json({
             status: "success",
